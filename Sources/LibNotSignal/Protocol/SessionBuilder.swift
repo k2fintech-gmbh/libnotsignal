@@ -1,8 +1,8 @@
 import Foundation
 
 public class SessionBuilder {
-    private let store: SignalProtocolStore
-    private let remoteAddress: SignalAddress
+    let store: SignalProtocolStore
+    let remoteAddress: SignalAddress
     
     public init(store: SignalProtocolStore, remoteAddress: SignalAddress) {
         self.store = store
