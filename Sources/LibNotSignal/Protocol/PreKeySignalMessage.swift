@@ -54,6 +54,11 @@ public class PreKeySignalMessage: Codable, Equatable {
         return self._preKeyId
     }
     
+    public func serialize() throws -> Data {
+        let encoder = JSONEncoder()
+        return try encoder.encode(self)
+    }
+    
     public static func == (lhs: PreKeySignalMessage, rhs: PreKeySignalMessage) -> Bool {
         return lhs.version == rhs.version &&
                lhs.registrationId == rhs.registrationId &&
