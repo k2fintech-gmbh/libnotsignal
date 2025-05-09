@@ -234,6 +234,11 @@ public struct CiphertextMessage {
     public let type: MessageType
     public let body: Data
     
+    // Compatibility alias for EncryptedSession.swift
+    public var messageType: MessageType {
+        return type
+    }
+    
     public init(type: MessageType, body: Data) {
         self.type = type
         self.body = body
