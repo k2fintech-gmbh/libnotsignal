@@ -38,6 +38,10 @@ public class SignalMessage: Codable, Equatable {
         )
     }
     
+    public convenience init(data: Data) throws {
+        try self.init(bytes: [UInt8](data))
+    }
+    
     public static func == (lhs: SignalMessage, rhs: SignalMessage) -> Bool {
         return lhs.version == rhs.version &&
                lhs.senderRatchetKey == rhs.senderRatchetKey &&
