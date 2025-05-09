@@ -24,6 +24,20 @@ public class SignalMessage: Codable, Equatable {
         self.serialized = serialized
     }
     
+    public convenience init(bytes: [UInt8]) throws {
+        let data = Data(bytes)
+        let decoder = JSONDecoder()
+        let decodedMessage = try decoder.decode(SignalMessage.self, from: data)
+        self.init(
+            version: decodedMessage.version,
+            senderRatchetKey: decodedMessage.senderRatchetKey,
+            counter: decodedMessage.counter,
+            previousCounter: decodedMessage.previousCounter,
+            ciphertext: decodedMessage.ciphertext,
+            serialized: data
+        )
+    }
+    
     public static func == (lhs: SignalMessage, rhs: SignalMessage) -> Bool {
         return lhs.version == rhs.version &&
                lhs.senderRatchetKey == rhs.senderRatchetKey &&

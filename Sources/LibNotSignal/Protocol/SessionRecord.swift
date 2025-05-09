@@ -11,6 +11,19 @@ public class SessionRecord: Codable, Equatable {
         self.sessionState = sessionState
     }
     
+    public convenience init(bytes: [UInt8]) throws {
+        let data = Data(bytes)
+        let decoder = JSONDecoder()
+        let record = try decoder.decode(SessionRecord.self, from: data)
+        self.init(sessionState: record.sessionState)
+        self.previousStates = record.previousStates
+    }
+    
+    public func serialize() throws -> Data {
+        let encoder = JSONEncoder()
+        return try encoder.encode(self)
+    }
+    
     public static func == (lhs: SessionRecord, rhs: SessionRecord) -> Bool {
         return lhs.sessionState == rhs.sessionState &&
                lhs.previousStates == rhs.previousStates

@@ -27,6 +27,21 @@ public class PreKeySignalMessage: Codable, Equatable {
         self.signalMessage = signalMessage
     }
     
+    public convenience init(bytes: [UInt8]) throws {
+        let data = Data(bytes)
+        let decoder = JSONDecoder()
+        let decodedMessage = try decoder.decode(PreKeySignalMessage.self, from: data)
+        self.init(
+            version: decodedMessage.version,
+            registrationId: decodedMessage.registrationId,
+            preKeyId: decodedMessage.preKeyId,
+            signedPreKeyId: decodedMessage.signedPreKeyId,
+            baseKey: decodedMessage.baseKey,
+            identityKey: decodedMessage.identityKey,
+            signalMessage: decodedMessage.signalMessage
+        )
+    }
+    
     public static func == (lhs: PreKeySignalMessage, rhs: PreKeySignalMessage) -> Bool {
         return lhs.version == rhs.version &&
                lhs.registrationId == rhs.registrationId &&
