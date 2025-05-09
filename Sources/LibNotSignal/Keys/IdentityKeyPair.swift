@@ -4,6 +4,11 @@ public struct IdentityKeyPair: Codable, Equatable {
     public let publicKey: IdentityKey
     public let privateKey: Data
     
+    // Add identityKey property to make it compatible with AsyncEncryptedService
+    public var identityKey: IdentityKey {
+        return publicKey
+    }
+    
     public init(publicKey: IdentityKey, privateKey: Data) {
         self.publicKey = publicKey
         self.privateKey = privateKey
@@ -31,6 +36,7 @@ public struct IdentityKeyPair: Codable, Equatable {
         return IdentityKeyPair(publicKey: identityKey, privateKey: privateKey)
     }
     
+    // Add a sign method to make it compatible with AsyncEncryptedService
     public func sign(_ message: Data) throws -> Data {
         return try SignalCrypto.shared.sign(privateKey: privateKey, message: message)
     }

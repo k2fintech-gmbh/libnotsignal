@@ -10,7 +10,7 @@ let package = Package(
     products: [
         .library(
             name: "LibNotSignal",
-            targets: ["LibNotSignal"]),
+            targets: ["LibNotSignal"])
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-crypto.git", from: "2.0.0"),
@@ -21,6 +21,9 @@ let package = Package(
             dependencies: [
                 .product(name: "Crypto", package: "swift-crypto")
             ]),
+        .executableTarget(
+            name: "TestLibNotSignal",
+            dependencies: ["LibNotSignal"]),
         .testTarget(
             name: "LibNotSignalTests",
             dependencies: ["LibNotSignal"]),

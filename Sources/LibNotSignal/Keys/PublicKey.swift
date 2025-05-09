@@ -16,7 +16,16 @@ public struct PublicKey: Codable, Equatable, ContiguousBytes {
         self.rawKey = data
     }
     
+    public init(_ data: Data) {
+        self.rawKey = data
+    }
+    
     public var rawRepresentation: Data {
+        return rawKey
+    }
+    
+    // Allow implicit conversion to Data
+    public var data: Data {
         return rawKey
     }
     
@@ -27,5 +36,26 @@ public struct PublicKey: Codable, Equatable, ContiguousBytes {
     // ContiguousBytes conformance
     public func withUnsafeBytes<R>(_ body: (UnsafeRawBufferPointer) throws -> R) rethrows -> R {
         return try rawKey.withUnsafeBytes(body)
+    }
+}
+
+// MARK: - Data conversion
+
+extension PublicKey: ExpressibleByData {
+    public var asData: Data {
+        return rawKey
+    }
+}
+
+extension PublicKey: CustomStringConvertible {
+    public var description: String {
+        return "<PublicKey: \(rawKey.count) bytes>"
+    }
+}
+
+// Allow implicit conversion from PublicKey to Data
+extension Data {
+    public init(_ publicKey: PublicKey) {
+        self = publicKey.asData
     }
 } 

@@ -18,12 +18,12 @@ public class RatchetingSession {
         // Calculate master secret
         var agreements = [
             try calculateAgreement(ourIdentityKeyPair.privateKey, theirSignedPreKey),
-            try calculateAgreement(ourBaseKey.privateKey, theirIdentityKey.publicKey),
-            try calculateAgreement(ourBaseKey.privateKey, theirSignedPreKey)
+            try calculateAgreement(ourBaseKey.privateKey.data, theirIdentityKey.publicKey),
+            try calculateAgreement(ourBaseKey.privateKey.data, theirSignedPreKey)
         ]
         
         if let theirOneTimePreKey = theirOneTimePreKey {
-            let agreement = try calculateAgreement(ourBaseKey.privateKey, theirOneTimePreKey)
+            let agreement = try calculateAgreement(ourBaseKey.privateKey.data, theirOneTimePreKey)
             agreements.append(agreement)
         }
         
@@ -36,7 +36,7 @@ public class RatchetingSession {
         let rootKey = derivedKeys.rootKey
         let chainKey = derivedKeys.chainKey
         
-        let sendingChain = try initializeSendingChain(rootKey, theirSignedPreKey, senderRatchetKeyPair.privateKey)
+        let sendingChain = try initializeSendingChain(rootKey, theirSignedPreKey, senderRatchetKeyPair.privateKey.data)
         
         // Set session parameters
         sessionState.remoteIdentityKey = theirIdentityKey
@@ -45,7 +45,7 @@ public class RatchetingSession {
         sessionState.sendingChain = SendingChain(
             key: sendingChain.chainKey,
             index: 0,
-            ratchetKey: senderRatchetKeyPair.publicKey
+            ratchetKey: senderRatchetKeyPair.publicKey.data
         )
         
         return sessionState

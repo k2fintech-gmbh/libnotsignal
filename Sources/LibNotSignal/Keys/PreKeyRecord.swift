@@ -27,6 +27,11 @@ public struct PreKeyRecord: Codable, Equatable {
         self.privateKey = privateKeyData
     }
     
+    // Add constructor for KeyPair
+    public init(id: UInt32, keyPair: KeyPair) {
+        self.init(id: id, publicKey: keyPair.publicKey, privateKey: keyPair.privateKey)
+    }
+    
     // Direct initialization from bytes array
     public init(bytes: [UInt8]) throws {
         self = try PreKeyRecord.deserialize(from: bytes)

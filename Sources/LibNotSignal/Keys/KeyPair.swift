@@ -1,16 +1,17 @@
 import Foundation
 
-public struct KeyPair: Codable, Equatable {
-    public let publicKey: Data
-    public let privateKey: Data
+public class KeyPair {
+    public let privateKey: PrivateKey
+    public let publicKey: PublicKey
     
-    public init(publicKey: Data, privateKey: Data) {
-        self.publicKey = publicKey
+    public init(privateKey: PrivateKey, publicKey: PublicKey) {
         self.privateKey = privateKey
+        self.publicKey = publicKey
     }
     
     public static func generate() throws -> KeyPair {
-        let (privateKey, publicKey) = try SignalCrypto.shared.generateKeyPair()
-        return KeyPair(publicKey: publicKey, privateKey: privateKey)
+        let privateKey = PrivateKey.generate()
+        let publicKey = privateKey.publicKey
+        return KeyPair(privateKey: privateKey, publicKey: publicKey)
     }
 } 

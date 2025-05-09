@@ -32,8 +32,7 @@ public class InMemorySignalProtocolStore: SignalProtocolStore, IdentityKeyStore,
     }
     
     public func getAllPreKeys() throws -> [PreKeyRecord] {
-        // Implement as needed - this is required by the protocol
-        // You might need to add this method to InMemoryPreKeyStore as well
+        // Implementation needed
         return []
     }
     
@@ -56,34 +55,35 @@ public class InMemorySignalProtocolStore: SignalProtocolStore, IdentityKeyStore,
     }
     
     public func getAllSignedPreKeys() throws -> [SignedPreKeyRecord] {
-        // Implement as needed - this is required by the protocol
-        // You might need to add this method to InMemorySignedPreKeyStore as well
+        // Implementation needed
         return []
     }
     
     // MARK: - SessionStore Protocol Implementation
     
     public func loadSession(for address: SignalAddress) throws -> SessionState? {
-        // Note: You might need to convert between SignalAddress and ProtocolAddress
-        // This is a placeholder implementation
-        let protocolAddress = convertToProtocolAddress(address)
-        return try sessionStore.loadSession(for: protocolAddress, context: nil) as? SessionState
+        let protocolAddress = ProtocolAddress(from: address)
+        if let sessionRecord = try sessionStore.loadSession(for: protocolAddress, context: nil) {
+            // Return the session state from the session record
+            return sessionRecord.sessionState
+        }
+        return nil
     }
     
     public func storeSession(_ session: SessionState, for address: SignalAddress) throws {
-        // Note: You might need to convert between SessionState and SessionRecord
-        // This is a placeholder implementation
-        let protocolAddress = convertToProtocolAddress(address)
-        try sessionStore.storeSession(session as! SessionRecord, for: protocolAddress, context: nil)
+        let protocolAddress = ProtocolAddress(from: address)
+        // Create a new SessionRecord with the provided SessionState
+        let sessionRecord = SessionRecord(sessionState: session)
+        try sessionStore.storeSession(sessionRecord, for: protocolAddress, context: nil)
     }
     
     public func containsSession(for address: SignalAddress) throws -> Bool {
-        let protocolAddress = convertToProtocolAddress(address)
+        let protocolAddress = ProtocolAddress(from: address)
         return try sessionStore.containsSession(for: protocolAddress, context: nil)
     }
     
     public func deleteSession(for address: SignalAddress) throws {
-        let protocolAddress = convertToProtocolAddress(address)
+        let protocolAddress = ProtocolAddress(from: address)
         try sessionStore.deleteSession(for: protocolAddress, context: nil)
     }
     
@@ -92,8 +92,8 @@ public class InMemorySignalProtocolStore: SignalProtocolStore, IdentityKeyStore,
     }
     
     public func getAllAddresses() throws -> [SignalAddress] {
-        // Implement as needed - this is required by the protocol
-        // You might need to add this method to InMemorySessionStore and convert results
+        // Implementation needed
+        // This would typically convert from ProtocolAddress to SignalAddress
         return []
     }
     
@@ -108,17 +108,17 @@ public class InMemorySignalProtocolStore: SignalProtocolStore, IdentityKeyStore,
     }
     
     public func saveIdentity(_ identity: IdentityKey, for address: SignalAddress) throws -> Bool {
-        let protocolAddress = convertToProtocolAddress(address)
+        let protocolAddress = ProtocolAddress(from: address)
         return try identityStore.saveIdentity(identity, for: protocolAddress, context: nil)
     }
     
     public func isTrustedIdentity(_ identity: IdentityKey, for address: SignalAddress, direction: Direction) throws -> Bool {
-        let protocolAddress = convertToProtocolAddress(address)
+        let protocolAddress = ProtocolAddress(from: address)
         return try identityStore.isTrustedIdentity(identity, for: protocolAddress, direction: direction, context: nil)
     }
     
     public func getIdentity(for address: SignalAddress) throws -> IdentityKey? {
-        let protocolAddress = convertToProtocolAddress(address)
+        let protocolAddress = ProtocolAddress(from: address)
         return try identityStore.identity(for: protocolAddress, context: nil)
     }
     
@@ -216,14 +216,5 @@ public class InMemorySignalProtocolStore: SignalProtocolStore, IdentityKeyStore,
     
     public func markKyberPreKeyUsed(id: UInt32, context: Any?) throws {
         // No implementation needed
-    }
-    
-    // MARK: - Helper methods
-    
-    private func convertToProtocolAddress(_ address: SignalAddress) -> ProtocolAddress {
-        // Implement conversion between SignalAddress and ProtocolAddress
-        // This is a placeholder and needs to be implemented correctly
-        // Example: return ProtocolAddress(name: address.name, deviceId: address.deviceId)
-        fatalError("Protocol address conversion not implemented")
     }
 } 

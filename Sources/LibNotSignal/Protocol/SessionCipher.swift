@@ -106,7 +106,7 @@ public class SessionCipher {
         // Create a new sending chain
         let sendingDerived = try calculateSendingKeys(
             rootKey: derived.rootKey,
-            ourRatchetKey: ourNewRatchetKeyPair.privateKey,
+            ourRatchetKey: ourNewRatchetKeyPair.privateKey.data,
             theirRatchetKey: senderRatchetKey
         )
         

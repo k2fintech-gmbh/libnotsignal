@@ -35,6 +35,50 @@ public struct SignedPreKeyRecord: Codable, Equatable {
         self.signature = signature
     }
     
+    // Add constructor for timestamp as Date
+    public init(id: UInt32, timestamp: Date, privateKey: PrivateKey, signature: Data) throws {
+        let publicKey = privateKey.publicKey
+        
+        var publicKeyData = Data()
+        publicKey.withUnsafeBytes { buffer in
+            publicKeyData.append(contentsOf: buffer)
+        }
+        
+        var privateKeyData = Data()
+        privateKey.withUnsafeBytes { buffer in
+            privateKeyData.append(contentsOf: buffer)
+        }
+        
+        self.init(
+            id: id,
+            timestamp: UInt64(timestamp.timeIntervalSince1970),
+            publicKey: publicKeyData,
+            privateKey: privateKeyData,
+            signature: signature
+        )
+    }
+    
+    // Add constructor for KeyPair
+    public init(id: UInt32, timestamp: Date, keyPair: KeyPair, signature: Data) {
+        var publicKeyData = Data()
+        keyPair.publicKey.withUnsafeBytes { buffer in
+            publicKeyData.append(contentsOf: buffer)
+        }
+        
+        var privateKeyData = Data()
+        keyPair.privateKey.withUnsafeBytes { buffer in
+            privateKeyData.append(contentsOf: buffer)
+        }
+        
+        self.init(
+            id: id,
+            timestamp: UInt64(timestamp.timeIntervalSince1970),
+            publicKey: publicKeyData,
+            privateKey: privateKeyData,
+            signature: signature
+        )
+    }
+    
     // Direct initialization from bytes array
     public init(bytes: [UInt8]) throws {
         self = try SignedPreKeyRecord.deserialize(from: bytes)

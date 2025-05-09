@@ -133,7 +133,7 @@ public class SessionState: Codable, Equatable {
         sendingChain = SendingChain(
             key: chainKey.key,
             index: chainKey.index,
-            ratchetKey: keyPair.publicKey
+            ratchetKey: keyPair.publicKey.data
         )
     }
 }
