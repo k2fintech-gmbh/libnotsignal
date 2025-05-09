@@ -2,7 +2,7 @@ import Foundation
 
 public extension Data {
     /// Returns an array of bytes from the Data object.
-    var bytes: [UInt8] {
+    var byteArray: [UInt8] {
         return [UInt8](self)
     }
 
