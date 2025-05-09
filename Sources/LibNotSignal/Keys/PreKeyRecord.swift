@@ -27,6 +27,11 @@ public struct PreKeyRecord: Codable, Equatable {
         self.privateKey = privateKeyData
     }
     
+    // Direct initialization from bytes array
+    public init(bytes: [UInt8]) throws {
+        self = try PreKeyRecord.deserialize(from: bytes)
+    }
+    
     public static func generate(id: UInt32) throws -> PreKeyRecord {
         let (privateKey, publicKey) = try SignalCrypto.shared.generateKeyPair()
         return PreKeyRecord(id: id, publicKey: publicKey, privateKey: privateKey)

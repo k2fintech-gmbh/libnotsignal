@@ -20,6 +20,11 @@ public struct IdentityKeyPair: Codable, Equatable {
         self.privateKey = privateKeyData
     }
     
+    // Direct initialization from bytes array
+    public init(bytes: [UInt8]) throws {
+        self = try IdentityKeyPair.deserialize(bytes: bytes)
+    }
+    
     public static func generate() throws -> IdentityKeyPair {
         let (privateKey, publicKey) = try SignalCrypto.shared.generateKeyPair()
         let identityKey = IdentityKey(publicKey: publicKey)

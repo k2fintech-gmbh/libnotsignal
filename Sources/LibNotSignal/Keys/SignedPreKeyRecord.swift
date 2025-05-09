@@ -35,6 +35,11 @@ public struct SignedPreKeyRecord: Codable, Equatable {
         self.signature = signature
     }
     
+    // Direct initialization from bytes array
+    public init(bytes: [UInt8]) throws {
+        self = try SignedPreKeyRecord.deserialize(from: bytes)
+    }
+    
     public static func generate(id: UInt32, identityKeyPair: IdentityKeyPair, timestamp: UInt64 = UInt64(Date().timeIntervalSince1970)) throws -> SignedPreKeyRecord {
         let (privateKey, publicKey) = try SignalCrypto.shared.generateKeyPair()
         
@@ -167,5 +172,10 @@ public struct SignedPreKeyRecord: Codable, Equatable {
     // Get the public key as a PublicKey object
     public func getPublicKey() -> PublicKey {
         return PublicKey(rawKey: publicKey)
+    }
+    
+    // Method to get the public key for Registration.swift
+    public func getSignedPreKeyPublicKey() -> PublicKey {
+        return getPublicKey()
     }
 } 
