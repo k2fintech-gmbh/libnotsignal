@@ -243,4 +243,8 @@ public struct CiphertextMessage {
         self.type = type
         self.body = body
     }
+
+    public func serialize() -> Data {
+        return body
+    }
 } 

@@ -49,7 +49,7 @@ public class SessionBuilder {
         let version = preKeySignalMessage.version
         let theirIdentityKey = preKeySignalMessage.identityKey
         let signedPreKeyId = preKeySignalMessage.signedPreKeyId
-        let preKeyId = preKeySignalMessage.preKeyId
+        let preKeyIdOptional = try? preKeySignalMessage.preKeyId()
         let baseKey = preKeySignalMessage.baseKey
         let signalMessage = preKeySignalMessage.signalMessage
         
@@ -67,8 +67,8 @@ public class SessionBuilder {
         }
         
         var ourOneTimePreKey: PreKeyRecord? = nil
-        if let preKeyId = preKeyId {
-            ourOneTimePreKey = try store.loadPreKey(id: preKeyId)
+        if let unwrappedPreKeyId = preKeyIdOptional {
+            ourOneTimePreKey = try store.loadPreKey(id: unwrappedPreKeyId)
         }
         
         // Create a new session
@@ -87,8 +87,8 @@ public class SessionBuilder {
         try store.saveIdentity(theirIdentityKey, for: remoteAddress)
         
         // Remove one-time prekey if used
-        if let preKeyId = preKeyId {
-            try store.removePreKey(id: preKeyId)
+        if let unwrappedPreKeyId = preKeyIdOptional {
+            try store.removePreKey(id: unwrappedPreKeyId)
         }
     }
 } 
