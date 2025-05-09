@@ -19,9 +19,9 @@ public class SessionRecord: Codable, Equatable {
         self.previousStates = record.previousStates
     }
     
-    public func serialize() throws -> Data {
+    public func serialize() -> Data {
         let encoder = JSONEncoder()
-        return try encoder.encode(self)
+        return try! encoder.encode(self)
     }
     
     public static func == (lhs: SessionRecord, rhs: SessionRecord) -> Bool {
