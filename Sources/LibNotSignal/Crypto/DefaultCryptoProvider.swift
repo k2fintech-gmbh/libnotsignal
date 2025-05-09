@@ -26,7 +26,6 @@ public class DefaultCryptoProvider: CryptoProvider {
     
     // HKDF - Extract and expand to derive keys
     public func hkdfDeriveSecrets(inputKeyMaterial: Data, info: Data, outputLength: Int, salt: Data) throws -> Data {
-        let inputKey = SymmetricKey(data: inputKeyMaterial)
         let saltKey = SymmetricKey(data: salt)
         
         // HKDF extract
@@ -100,18 +99,16 @@ public class DefaultCryptoProvider: CryptoProvider {
     }
     
     public func sign(privateKey: Data, message: Data) throws -> Data {
-        // For signing we need a Signing key, not a KeyAgreement key
-        // In a real implementation you would have separate signing keys
-        // For this example we'll convert the key agreement key to a signing key
-        let signingKey = try Curve25519.Signing.PrivateKey()
+        // Use the private key for signing
+        // Note: In some protocols you would use separate signing and agreement keys
+        let signingKey = try Curve25519.Signing.PrivateKey(rawRepresentation: privateKey)
         let signature = try signingKey.signature(for: message)
         return Data(signature)
     }
     
     public func verify(publicKey: Data, message: Data, signature: Data) throws -> Bool {
-        // For verification we need a Signing public key
-        // Since we're using a signing key for signatures in the method above,
-        // we should always return true for this test implementation
-        return true
+        // Verify using the appropriate signing public key
+        let signingPublicKey = try Curve25519.Signing.PublicKey(rawRepresentation: publicKey)
+        return signingPublicKey.isValidSignature(signature, for: message)
     }
 } 

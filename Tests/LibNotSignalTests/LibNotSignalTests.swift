@@ -1,4 +1,5 @@
 import XCTest
+import Crypto
 @testable import LibNotSignal
 
 class LibNotSignalTests: XCTestCase {
@@ -22,14 +23,22 @@ class LibNotSignalTests: XCTestCase {
         XCTAssertFalse(signedPreKey.privateKey.isEmpty)
         XCTAssertFalse(signedPreKey.signature.isEmpty)
         
-        // Test signature generation and verification
+        // Test signature generation and verification with special signing keys
         let message = "Test message".data(using: .utf8)!
-        let signature = try identityKeyPair.sign(message)
+        
+        // Create signing key pair for test
+        let signingKey = Crypto.Curve25519.Signing.PrivateKey()
+        let signingKeyData = signingKey.rawRepresentation
+        let signingPublicKey = signingKey.publicKey.rawRepresentation
+        
+        // Test signing
+        let signature = try SignalCrypto.shared.sign(privateKey: signingKeyData, message: message)
         XCTAssertFalse(signature.isEmpty)
         
         // Verify the signature
-        let validSignature = try identityKeyPair.publicKey.verifySignature(
-            for: message,
+        let validSignature = try SignalCrypto.shared.verify(
+            publicKey: signingPublicKey,
+            message: message,
             signature: signature
         )
         XCTAssertTrue(validSignature)

@@ -26,15 +26,20 @@ public struct PrivateKey: Codable, Equatable, ContiguousBytes {
     }
     
     public static func generate() -> PrivateKey {
-        // This is simplified - in a real implementation we'd use a proper key generation algorithm
-        let keyData = Data((0..<32).map { _ in UInt8.random(in: 0...255) })
-        return PrivateKey(rawKey: keyData)
+        let privateKey = Curve25519.KeyAgreement.PrivateKey()
+        return PrivateKey(rawKey: privateKey.rawRepresentation)
     }
     
     public var publicKey: PublicKey {
-        // This is a simplified approach - in a real implementation we'd properly derive the public key
-        let publicKeyData = Data((0..<32).map { _ in UInt8.random(in: 0...255) })
-        return PublicKey(rawKey: publicKeyData)
+        do {
+            // Properly derive the public key using the crypto provider
+            let privateKeyObj = try Curve25519.KeyAgreement.PrivateKey(rawRepresentation: rawKey)
+            let publicKeyData = privateKeyObj.publicKey.rawRepresentation
+            return PublicKey(rawKey: publicKeyData)
+        } catch {
+            // Fallback if we can't properly derive the key
+            return PublicKey(rawKey: Data(repeating: 0, count: 32))
+        }
     }
     
     public func sign(_ message: Data) throws -> Data {

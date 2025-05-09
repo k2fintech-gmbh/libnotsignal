@@ -61,23 +61,13 @@ public class SignalCrypto {
     
     // Generate a key pair using a given private key
     public func generateKeyPair(privateKey: Data) throws -> (privateKey: Data, publicKey: Data) {
-        // In a real implementation, this would properly derive the public key from the private key
-        // For this implementation, we'll just use the provider's method to generate the public key
-        
-        let generatedPublicKey: Data
-        
-        // Use the underlying provider if it supports this operation
+        // Use the provider to derive the public key from the private key
         if let extendedProvider = provider as? ExtendedCryptoProvider {
-            generatedPublicKey = try extendedProvider.getPublicKeyFrom(privateKey: privateKey)
+            let publicKey = try extendedProvider.getPublicKeyFrom(privateKey: privateKey)
+            return (privateKey: privateKey, publicKey: publicKey)
         } else {
-            // Fallback if the provider doesn't support it directly
-            // This is a simplification - in a real implementation,
-            // we'd have a proper way to derive the public key
-            let dummyData = try randomBytes(count: 32)
-            generatedPublicKey = try provider.calculateAgreement(privateKey: privateKey, publicKey: dummyData)
+            throw LibNotSignalError.unsupportedOperation
         }
-        
-        return (privateKey: privateKey, publicKey: generatedPublicKey)
     }
     
     public func calculateAgreement(privateKey: Data, publicKey: Data) throws -> Data {

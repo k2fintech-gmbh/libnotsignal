@@ -3,19 +3,13 @@ import Crypto
 
 extension DefaultCryptoProvider: ExtendedCryptoProvider {
     public func getPublicKeyFrom(privateKey: Data) throws -> Data {
-        // This is a simplified implementation
-        // In a real implementation, this would use the appropriate cryptographic operations
-        // to derive the public key from the private key
+        // Create a private key from the raw representation
+        let privateKeyObj = try Curve25519.KeyAgreement.PrivateKey(rawRepresentation: privateKey)
         
-        guard privateKey.count == 32 else {
-            throw LibNotSignalError.invalidKeyLength
-        }
+        // Get the public key
+        let publicKey = privateKeyObj.publicKey
         
-        // For simplicity, we're using a deterministic approach based on hashing
-        // This is NOT how a real cryptographic key derivation would work
-        // A real implementation would use proper curve operations
-        
-        let derivedData = sha256(privateKey)
-        return derivedData.prefix(32)
+        // Return the raw representation of the public key
+        return publicKey.rawRepresentation
     }
 } 

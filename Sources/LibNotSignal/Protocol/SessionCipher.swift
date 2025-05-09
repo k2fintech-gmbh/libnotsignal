@@ -48,13 +48,27 @@ public class SessionCipher {
             counter: messageKeys.index,
             previousCounter: sessionState.previousCounter,
             ciphertext: ciphertext,
-            serialized: Data() // This would be serialized in a real implementation
+            serialized: Data()  // Will be properly serialized below
+        )
+        
+        // Properly serialize the message
+        let encoder = JSONEncoder()
+        let serializedData = try encoder.encode(signalMessage)
+        
+        // Create final message with proper serialization
+        let finalSignalMessage = SignalMessage(
+            version: version,
+            senderRatchetKey: sendingChain.ratchetKey,
+            counter: messageKeys.index,
+            previousCounter: sessionState.previousCounter,
+            ciphertext: ciphertext,
+            serialized: serializedData
         )
         
         // Store the updated session
         try store.storeSession(sessionState, for: remoteAddress)
         
-        return CiphertextMessage(type: .whisper, body: signalMessage.serialized)
+        return CiphertextMessage(type: .whisper, body: finalSignalMessage.serialized)
     }
     
     public func decrypt(message: SignalMessage) throws -> Data {
@@ -86,7 +100,7 @@ public class SessionCipher {
     }
     
     private func createNewReceiverChain(sessionState: SessionState, senderRatchetKey: Data) throws {
-        guard let sendingChain = sessionState.sendingChain else {
+        if sessionState.sendingChain == nil {
             throw LibNotSignalError.invalidState
         }
         
