@@ -27,6 +27,13 @@ public struct IdentityKey: Codable, Equatable {
         return IdentityKey(publicKey: Data(bytes))
     }
     
+    // Backward compatibility with Codable - deserialize from Decoder
+    public static func deserialize(from decoder: Decoder) throws -> IdentityKey {
+        let container = try decoder.singleValueContainer()
+        let data = try container.decode(Data.self)
+        return try deserialize(bytes: [UInt8](data))
+    }
+    
     public func getPublicKey() -> PublicKey {
         return PublicKey(rawKey: publicKey)
     }

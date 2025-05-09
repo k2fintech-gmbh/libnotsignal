@@ -95,6 +95,13 @@ public struct PreKeyRecord: Codable, Equatable {
         return PreKeyRecord(id: id, publicKey: publicKey, privateKey: privateKey)
     }
     
+    // Backward compatibility with Codable - deserialize from Decoder
+    public static func deserialize(from decoder: Decoder) throws -> PreKeyRecord {
+        let container = try decoder.singleValueContainer()
+        let data = try container.decode(Data.self)
+        return try deserialize(from: [UInt8](data))
+    }
+    
     public func getPrivateKey() -> PrivateKey {
         return PrivateKey(rawKey: privateKey)
     }
