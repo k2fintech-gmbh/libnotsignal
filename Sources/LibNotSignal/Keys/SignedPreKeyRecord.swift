@@ -152,6 +152,13 @@ public struct SignedPreKeyRecord: Codable, Equatable {
         )
     }
     
+    // Backward compatibility with Codable - deserialize from Decoder
+    public static func deserialize(from decoder: Decoder) throws -> SignedPreKeyRecord {
+        let container = try decoder.singleValueContainer()
+        let data = try container.decode(Data.self)
+        return try deserialize(from: [UInt8](data))
+    }
+    
     // Get the private key as a PrivateKey object
     public func getPrivateKey() -> PrivateKey {
         return PrivateKey(rawKey: privateKey)
