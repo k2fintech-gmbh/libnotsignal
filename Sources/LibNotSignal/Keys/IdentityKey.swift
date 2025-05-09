@@ -15,6 +15,11 @@ public struct IdentityKey: Codable, Equatable {
         self.publicKey = publicKeyData
     }
     
+    public convenience init(bytes: [UInt8]) throws {
+        let deserialized = try Self.deserialize(bytes: bytes)
+        self.init(publicKey: deserialized.publicKey)
+    }
+    
     public func verifySignature(for message: Data, signature: Data) throws -> Bool {
         return try SignalCrypto.shared.verify(publicKey: publicKey, message: message, signature: signature)
     }
