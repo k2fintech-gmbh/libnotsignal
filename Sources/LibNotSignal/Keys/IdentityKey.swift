@@ -15,7 +15,7 @@ public struct IdentityKey: Codable, Equatable {
         self.publicKey = publicKeyData
     }
     
-    public convenience init(bytes: [UInt8]) throws {
+    public init(bytes: [UInt8]) throws {
         let deserialized = try Self.deserialize(bytes: bytes)
         self.init(publicKey: deserialized.publicKey)
     }

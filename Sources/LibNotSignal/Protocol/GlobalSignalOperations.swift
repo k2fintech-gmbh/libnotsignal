@@ -1,9 +1,5 @@
 import Foundation
 
-// This context is likely a placeholder or part of an older API.
-// The new SessionCipher/SessionBuilder don't use it directly in their public methods.
-public struct NullContext {}
-
 // MARK: - Recreated Global Signal Operations for Compatibility
 
 // Corresponds to:
