@@ -24,6 +24,7 @@ public enum LibNotSignalError: Error, Equatable {
     case invalidKeyId
     case invalidSerializedData
     case unsupportedOperation
+    case signatureError
     
     public var localizedDescription: String {
         switch self {
@@ -73,6 +74,8 @@ public enum LibNotSignalError: Error, Equatable {
             return "Invalid serialized data"
         case .unsupportedOperation:
             return "Operation not supported by the current provider"
+        case .signatureError:
+            return "Error during signature generation or verification"
         }
     }
 } 

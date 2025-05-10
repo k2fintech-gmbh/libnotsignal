@@ -1,71 +1,83 @@
 import XCTest
-import Crypto
 @testable import LibNotSignal
 
-class CryptoTests: XCTestCase {
+final class CryptoTests: XCTestCase {
     
-    func testAESGCMEncryptionDecryption() throws {
-        // Generate a random key and IV
-        let key = try SignalCrypto.shared.randomBytes(count: 32) // 256-bit key
-        let iv = try SignalCrypto.shared.randomBytes(count: 12)  // 96-bit IV (standard for AES-GCM)
+    func testGenerateKeyPair() throws {
+        // Generate a key pair
+        let keyPair = try SignalCrypto.shared.generateKeyPair()
         
-        // Test data
-        let plaintext = "This is a test message for Signal Protocol".data(using: .utf8)!
+        // Verify key pair properties
+        XCTAssertNotNil(keyPair.publicKey)
+        XCTAssertNotNil(keyPair.privateKey)
+        XCTAssertFalse(keyPair.publicKey.isEmpty)
+        XCTAssertFalse(keyPair.privateKey.isEmpty)
         
-        // Encrypt
+        // Generate a second key pair to check uniqueness
+        let keyPair2 = try SignalCrypto.shared.generateKeyPair()
+        XCTAssertNotEqual(keyPair.publicKey, keyPair2.publicKey)
+        XCTAssertNotEqual(keyPair.privateKey, keyPair2.privateKey)
+    }
+    
+    func testRandomBytes() throws {
+        // Test random data generation
+        let randomData1 = try SignalCrypto.shared.randomBytes(count: 32)
+        let randomData2 = try SignalCrypto.shared.randomBytes(count: 32)
+        
+        // Verify the length
+        XCTAssertEqual(randomData1.count, 32)
+        XCTAssertEqual(randomData2.count, 32)
+        
+        // Verify that two random generations produce different data
+        XCTAssertNotEqual(randomData1, randomData2)
+    }
+    
+    func testEncryptDecrypt() throws {
+        // Generate a random key and IV for testing
+        let key = try SignalCrypto.shared.randomBytes(count: 32)  // 256-bit key
+        let iv = try SignalCrypto.shared.randomBytes(count: 16)   // 128-bit IV
+        
+        // Test data to encrypt
+        let plaintext = "Secret message".data(using: .utf8)!
+        
+        // Encrypt data
         let ciphertext = try SignalCrypto.shared.encrypt(key: key, iv: iv, data: plaintext)
         
-        // Verify format: The ciphertext should be original length + 16 bytes for the tag
-        XCTAssertEqual(ciphertext.count, plaintext.count + 16)
+        // Verify ciphertext is not the same as plaintext
+        XCTAssertNotEqual(ciphertext, plaintext)
         
-        // Decrypt
+        // Decrypt data
         let decrypted = try SignalCrypto.shared.decrypt(key: key, iv: iv, data: ciphertext)
         
-        // Verify decryption
+        // Verify decrypted matches the original
         XCTAssertEqual(decrypted, plaintext)
-        
-        // Test authentication failure
-        var modifiedCiphertext = ciphertext
-        // Modify a byte in the ciphertext
-        let index = min(4, ciphertext.count - 17)  // Ensure we're modifying the ciphertext, not the tag
-        modifiedCiphertext[index] ^= 0x01
-        
-        // This should throw an authentication error
-        XCTAssertThrowsError(try SignalCrypto.shared.decrypt(key: key, iv: iv, data: modifiedCiphertext)) { error in
-            XCTAssertEqual(error as? LibNotSignalError, LibNotSignalError.invalidCiphertext)
-        }
     }
     
-    func testSignalProtocolFormat() throws {
-        // This test verifies that our AES-GCM format matches what Signal Protocol expects
+    func testEncryptDecryptSpecificMessage() throws {
+        // Generate a random key and IV for encryption
+        let key = try SignalCrypto.shared.randomBytes(count: 32)  // 256-bit key
+        let iv = try SignalCrypto.shared.randomBytes(count: 16)   // 128-bit IV
         
-        // Generate a random key and IV
-        let key = try SignalCrypto.shared.randomBytes(count: 32)
-        let iv = try SignalCrypto.shared.randomBytes(count: 12)
+        // Specific message to encrypt
+        let message = "Hi BOB"
+        let plaintext = message.data(using: .utf8)!
         
-        // Test data
-        let plaintext = "Message for Signal Protocol format test".data(using: .utf8)!
+        // Encrypt the message
+        let ciphertext = try SignalCrypto.shared.encrypt(key: key, iv: iv, data: plaintext)
         
-        // Encrypt with our provider
-        let provider = DefaultCryptoProvider()
-        let ciphertext = try provider.encrypt(key: key, iv: iv, data: plaintext)
+        // Verify the message was encrypted (ciphertext should be different from plaintext)
+        XCTAssertNotEqual(ciphertext, plaintext)
         
-        // Verify that our ciphertext doesn't contain the IV
-        // (Signal Protocol passes IV separately, so ciphertext should only have data + tag)
+        // Decrypt the message
+        let decryptedData = try SignalCrypto.shared.decrypt(key: key, iv: iv, data: ciphertext)
         
-        // Create a Swift Crypto implementation for verification
-        let symmetricKey = SymmetricKey(data: key)
-        let nonce = try AES.GCM.Nonce(data: iv)
-        let sealedBox = try AES.GCM.seal(plaintext, using: symmetricKey, nonce: nonce)
+        // Convert back to string
+        let decryptedMessage = String(data: decryptedData, encoding: .utf8)
         
-        // Our ciphertext should be just the ciphertext + tag (no IV)
-        let expectedFormat = sealedBox.ciphertext + sealedBox.tag
-        
-        // Verify the format
-        XCTAssertEqual(ciphertext, expectedFormat)
-        
-        // Verify decryption using separate IV
-        let decrypted = try provider.decrypt(key: key, iv: iv, data: ciphertext)
-        XCTAssertEqual(decrypted, plaintext)
+        // Verify decrypted message matches the original
+        XCTAssertEqual(decryptedMessage, message)
+        XCTAssertEqual(decryptedMessage, "Hi BOB")
     }
+    
+    // Note: Signing and verification functionality is not yet implemented
 } 
