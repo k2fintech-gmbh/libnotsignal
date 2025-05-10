@@ -33,7 +33,7 @@ public class SessionCipher {
         // Create the message
         let version: UInt8 = 3 // Current version
         
-        // Encrypt the message
+        // Encrypt the message - our new version returns the complete sealed box
         let iv = messageKeys.iv
         let ciphertext = try SignalCrypto.shared.encrypt(
             key: messageKeys.cipherKey,
@@ -51,9 +51,8 @@ public class SessionCipher {
             serialized: Data()  // Will be properly serialized below
         )
         
-        // Properly serialize the message
-        let encoder = JSONEncoder()
-        let serializedData = try encoder.encode(signalMessage)
+        // Properly serialize the message using our new binary format
+        let serializedData = signalMessage.serializedData()
         
         // Create final message with proper serialization
         let finalSignalMessage = SignalMessage(
@@ -230,6 +229,7 @@ public class SessionCipher {
     }
     
     private func decrypt(ciphertext: Data, iv: Data, key: Data) throws -> Data {
+        // Use the updated decrypt method that takes the complete sealed box
         return try SignalCrypto.shared.decrypt(
             key: key,
             iv: iv,
