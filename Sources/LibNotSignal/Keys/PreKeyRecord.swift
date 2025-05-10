@@ -53,19 +53,22 @@ public struct PreKeyRecord: Codable, Equatable {
         return preKeys
     }
     
-    public func serialize() -> Data {
-        var result = Data()
+    public func serialize() -> [UInt8] {
+        var result = [UInt8]()
         
-        var idValue = id
+        // Add ID (4 bytes, big-endian)
+        var idValue = id.bigEndian
         result.append(contentsOf: withUnsafeBytes(of: &idValue) { Array($0) })
         
-        var publicKeyLength = UInt16(publicKey.count)
+        // Add public key length and data (big-endian)
+        var publicKeyLength = UInt16(publicKey.count).bigEndian
         result.append(contentsOf: withUnsafeBytes(of: &publicKeyLength) { Array($0) })
-        result.append(publicKey)
+        result.append(contentsOf: publicKey)
         
-        var privateKeyLength = UInt16(privateKey.count)
+        // Add private key length and data (big-endian)
+        var privateKeyLength = UInt16(privateKey.count).bigEndian
         result.append(contentsOf: withUnsafeBytes(of: &privateKeyLength) { Array($0) })
-        result.append(privateKey)
+        result.append(contentsOf: privateKey)
         
         return result
     }

@@ -42,17 +42,20 @@ public struct IdentityKeyPair: Codable, Equatable {
     }
     
     // Serialize the key pair
-    public func serialize() -> Data {
+    public func serialize() -> [UInt8] {
         let encodedPublicKey = publicKey.serialize()
         
-        var result = Data()
-        var privateKeyLength = UInt16(privateKey.count)
-        result.append(contentsOf: withUnsafeBytes(of: &privateKeyLength) { Array($0) })
-        result.append(privateKey)
+        var result = [UInt8]()
         
-        var publicKeyLength = UInt16(encodedPublicKey.count)
+        // Add private key length and data (big-endian)
+        var privateKeyLength = UInt16(privateKey.count).bigEndian
+        result.append(contentsOf: withUnsafeBytes(of: &privateKeyLength) { Array($0) })
+        result.append(contentsOf: privateKey)
+        
+        // Add public key length and data (big-endian)
+        var publicKeyLength = UInt16(encodedPublicKey.count).bigEndian
         result.append(contentsOf: withUnsafeBytes(of: &publicKeyLength) { Array($0) })
-        result.append(encodedPublicKey)
+        result.append(contentsOf: encodedPublicKey)
         
         return result
     }

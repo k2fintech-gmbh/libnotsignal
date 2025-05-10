@@ -28,8 +28,8 @@ public struct IdentityKey: Codable, Equatable {
         return try SignalCrypto.shared.verify(publicKey: publicKey, message: message, signature: signature)
     }
     
-    public func serialize() -> Data {
-        return publicKey
+    public func serialize() -> [UInt8] {
+        return [UInt8](publicKey)
     }
     
     public static func deserialize(bytes: [UInt8]) throws -> IdentityKey {
