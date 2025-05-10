@@ -100,8 +100,8 @@ public struct SignedPreKeyRecord: Codable, Equatable {
     }
     
     // Serialize the signed pre-key record
-    public func serialize() -> Data {
-        var result = Data()
+    public func serialize() -> [UInt8] {
+        var result = [UInt8]()
         
         // Add ID (4 bytes)
         var idValue = id
@@ -114,17 +114,17 @@ public struct SignedPreKeyRecord: Codable, Equatable {
         // Add public key length and data
         var publicKeyLength = UInt16(publicKey.count)
         result.append(contentsOf: withUnsafeBytes(of: &publicKeyLength) { Array($0) })
-        result.append(publicKey)
+        result.append(contentsOf: publicKey)
         
         // Add private key length and data
         var privateKeyLength = UInt16(privateKey.count)
         result.append(contentsOf: withUnsafeBytes(of: &privateKeyLength) { Array($0) })
-        result.append(privateKey)
+        result.append(contentsOf: privateKey)
         
         // Add signature length and data
         var signatureLength = UInt16(signature.count)
         result.append(contentsOf: withUnsafeBytes(of: &signatureLength) { Array($0) })
-        result.append(signature)
+        result.append(contentsOf: signature)
         
         return result
     }
