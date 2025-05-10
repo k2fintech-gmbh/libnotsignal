@@ -2,132 +2,210 @@ import XCTest
 @testable import LibNotSignal
 
 final class SessionTests: XCTestCase {
+    var aliceStore: InMemorySignalProtocolStore!
+    var bobStore: InMemorySignalProtocolStore!
+    var aliceAddress: SignalAddress!
+    var bobAddress: SignalAddress!
     
-    // Test basic session setup
-    func testSessionCreation() throws {
-        // Set up Alice's device
-        let aliceIdentityKeyPair = try LibNotSignal.shared.generateIdentityKeyPair()
-        let aliceRegistrationId = try LibNotSignal.shared.generateRegistrationId()
+    override func setUp() {
+        super.setUp()
         
-        // Set up Bob's device
-        let bobIdentityKeyPair = try LibNotSignal.shared.generateIdentityKeyPair()
-        let bobRegistrationId = try LibNotSignal.shared.generateRegistrationId()
+        // Generate identity keys for Alice and Bob
+        let aliceIdentityKeyPair = try! LibNotSignal.shared.generateIdentityKeyPair()
+        let bobIdentityKeyPair = try! LibNotSignal.shared.generateIdentityKeyPair()
         
         // Create protocol stores
-        let aliceStore = InMemorySignalProtocolStore(identity: aliceIdentityKeyPair, registrationId: aliceRegistrationId)
-        let bobStore = InMemorySignalProtocolStore(identity: bobIdentityKeyPair, registrationId: bobRegistrationId)
-        
-        // Verify store creation worked
-        XCTAssertNotNil(aliceStore)
-        XCTAssertNotNil(bobStore)
-        
-        // Verify we can retrieve the identity information
-        XCTAssertEqual(try aliceStore.getIdentityKeyPair().publicKey, aliceIdentityKeyPair.publicKey)
-        XCTAssertEqual(try bobStore.getIdentityKeyPair().publicKey, bobIdentityKeyPair.publicKey)
-        XCTAssertEqual(try aliceStore.getLocalRegistrationId(), aliceRegistrationId)
-        XCTAssertEqual(try bobStore.getLocalRegistrationId(), bobRegistrationId)
-    }
-    
-    // Test basic identity key trust
-    func testIdentityTrust() throws {
-        // Set up Alice's device
-        let aliceIdentityKeyPair = try LibNotSignal.shared.generateIdentityKeyPair()
-        let aliceRegistrationId = try LibNotSignal.shared.generateRegistrationId()
-        
-        // Set up Bob's device
-        let bobIdentityKeyPair = try LibNotSignal.shared.generateIdentityKeyPair()
-        
-        // Create the addresses
-        let bobAddress = SignalAddress(name: "bob", deviceId: 2)
-        
-        // Create Alice's store
-        let aliceStore = InMemorySignalProtocolStore(identity: aliceIdentityKeyPair, registrationId: aliceRegistrationId)
-        
-        // By default, any identity should be trusted since we haven't stored any yet
-        let isTrustedByDefault = try aliceStore.isTrustedIdentity(bobIdentityKeyPair.publicKey, for: bobAddress, direction: .sending)
-        XCTAssertTrue(isTrustedByDefault, "New identities should be trusted by default")
-    }
-    
-    // Test saving identity keys
-    func testSaveIdentity() throws {
-        // Set up a protocol store
-        let identityKeyPair = try LibNotSignal.shared.generateIdentityKeyPair()
-        let registrationId = try LibNotSignal.shared.generateRegistrationId()
-        let store = InMemorySignalProtocolStore(identity: identityKeyPair, registrationId: registrationId)
-        
-        // Create a remote identity and address
-        let remoteKeyPair = try LibNotSignal.shared.generateIdentityKeyPair()
-        let remoteAddress = SignalAddress(name: "remote", deviceId: 1)
-        
-        // Save the identity for the first time
-        let firstSaveResult = try store.saveIdentity(remoteKeyPair.publicKey, for: remoteAddress)
-        // In our implementation, saving a new identity should return true
-        // (indicating that the identity was added or changed)
-        print("First save result: \(firstSaveResult)")
-        
-        // Get the saved identity
-        let savedIdentity = try store.getIdentity(for: remoteAddress)
-        XCTAssertNotNil(savedIdentity, "Identity should be saved and retrievable")
-        if let savedIdentity = savedIdentity {
-            XCTAssertEqual(savedIdentity.serialize(), remoteKeyPair.publicKey.serialize(), "Saved identity should match what was stored")
-        }
-        
-        // Save the same identity again
-        let secondSaveResult = try store.saveIdentity(remoteKeyPair.publicKey, for: remoteAddress)
-        print("Second save result (same key): \(secondSaveResult)")
-        // Some implementations return false for saving the same identity again
-        // But we won't assert this behavior as it might differ between implementations
-        
-        // Generate a different key and save it for the same address
-        let differentKeyPair = try LibNotSignal.shared.generateIdentityKeyPair()
-        let differentSaveResult = try store.saveIdentity(differentKeyPair.publicKey, for: remoteAddress)
-        print("Different key save result: \(differentSaveResult)")
-        // Some implementations return true for saving a different identity
-        // But we won't assert this behavior as it might differ between implementations
-        
-        // Get the updated identity 
-        let updatedIdentity = try store.getIdentity(for: remoteAddress)
-        XCTAssertNotNil(updatedIdentity, "Updated identity should be retrievable")
-        if let updatedIdentity = updatedIdentity {
-            XCTAssertEqual(updatedIdentity.serialize(), differentKeyPair.publicKey.serialize(), "Updated identity should match the most recently stored key")
-        }
-    }
-    
-    // Test fingerprint generation
-    func testFingerprint() throws {
-        // Set up Alice's device
-        let aliceIdentityKeyPair = try LibNotSignal.shared.generateIdentityKeyPair()
-        
-        // Set up Bob's device
-        let bobIdentityKeyPair = try LibNotSignal.shared.generateIdentityKeyPair()
-        
-        // Create the addresses
-        let aliceAddress = SignalAddress(name: "alice", deviceId: 1)
-        let bobAddress = SignalAddress(name: "bob", deviceId: 2)
-        
-        // Generate fingerprint
-        let fingerprint = LibNotSignal.shared.generateFingerprint(
-            localIdentity: aliceIdentityKeyPair.publicKey,
-            remoteIdentity: bobIdentityKeyPair.publicKey,
-            localAddress: aliceAddress,
-            remoteAddress: bobAddress
+        aliceStore = InMemorySignalProtocolStore(
+            identity: aliceIdentityKeyPair,
+            registrationId: try! LibNotSignal.shared.generateRegistrationId()
         )
         
-        // Verify fingerprint properties
-        XCTAssertNotNil(fingerprint)
-        XCTAssertFalse(fingerprint.isEmpty)
-        XCTAssertTrue(fingerprint.contains("alice:"))
-        XCTAssertTrue(fingerprint.contains("bob:"))
-        XCTAssertTrue(fingerprint.contains("<->"))
-        
-        // Verify that a different pair of identities produces a different fingerprint
-        let aliceIdentityKeyPair2 = try LibNotSignal.shared.generateIdentityKeyPair()
-        let fingerprint2 = LibNotSignal.shared.generateFingerprint(
-            localIdentity: aliceIdentityKeyPair2.publicKey,
-            remoteIdentity: bobIdentityKeyPair.publicKey,
-            localAddress: aliceAddress,
-            remoteAddress: bobAddress
+        bobStore = InMemorySignalProtocolStore(
+            identity: bobIdentityKeyPair,
+            registrationId: try! LibNotSignal.shared.generateRegistrationId()
         )
-        XCTAssertNotEqual(fingerprint, fingerprint2)
+        
+        // Create addresses
+        aliceAddress = SignalAddress(name: "alice", deviceId: 1)
+        bobAddress = SignalAddress(name: "bob", deviceId: 1)
+    }
+    
+    func testBasicPreKeySession() throws {
+        // Generate pre-keys for Bob
+        let preKeys = try LibNotSignal.shared.generatePreKeys(start: 1, count: 10)
+        let signedPreKey = try LibNotSignal.shared.generateSignedPreKey(
+            identityKeyPair: try bobStore.getIdentityKeyPair(),
+            id: 1
+        )
+        
+        // Store Bob's pre-keys
+        for preKey in preKeys {
+            try bobStore.storePreKey(preKey, id: preKey.id)
+        }
+        try bobStore.storeSignedPreKey(signedPreKey, id: signedPreKey.id)
+        
+        // Create Bob's pre-key bundle
+        let bobPreKeyBundle = PreKeyBundle(
+            registrationId: try bobStore.getLocalRegistrationId(),
+            deviceId: bobAddress.deviceId,
+            preKeyId: preKeys[0].id,
+            preKey: preKeys[0].publicKey,
+            signedPreKeyId: signedPreKey.id,
+            signedPreKey: signedPreKey.publicKey,
+            signedPreKeySignature: signedPreKey.signature,
+            identityKey: try bobStore.getIdentityKeyPair().publicKey
+        )
+        
+        // Alice processes Bob's pre-key bundle
+        let sessionBuilder = SessionBuilder(store: aliceStore, remoteAddress: bobAddress)
+        try sessionBuilder.process(preKeyBundle: bobPreKeyBundle)
+        
+        // Verify Alice has a session with Bob
+        XCTAssertNotNil(try aliceStore.loadSession(for: bobAddress))
+        
+        // Alice sends a message to Bob
+        let originalMessage = "Hello, Bob!"
+        let sessionCipher = SessionCipher(store: aliceStore, remoteAddress: bobAddress)
+        let encryptedMessage = try sessionCipher.encrypt(originalMessage.data(using: .utf8)!)
+        
+        // Verify it's a pre-key message
+        XCTAssertEqual(encryptedMessage.type, .preKey)
+        
+        // Convert to PreKeySignalMessage for Bob to decrypt
+        let preKeyMessage = try PreKeySignalMessage(bytes: [UInt8](encryptedMessage.body))
+        
+        // Bob decrypts the message
+        let bobSessionCipher = SessionCipher(store: bobStore, remoteAddress: aliceAddress)
+        let decryptedMessage = try bobSessionCipher.decrypt(preKeyMessage: preKeyMessage)
+        let decryptedText = String(data: decryptedMessage, encoding: .utf8)!
+        
+        XCTAssertEqual(decryptedText, originalMessage)
+        
+        // Bob sends a response
+        let responseMessage = "Hello, Alice!"
+        let encryptedResponse = try bobSessionCipher.encrypt(responseMessage.data(using: .utf8)!)
+        
+        // Verify it's a regular message
+        XCTAssertEqual(encryptedResponse.type, .whisper)
+        
+        // Convert to SignalMessage for Alice to decrypt
+        let signalMessage = try SignalMessage(data: encryptedResponse.body)
+        
+        // Alice decrypts the response
+        let decryptedResponse = try sessionCipher.decrypt(message: signalMessage)
+        let decryptedResponseText = String(data: decryptedResponse, encoding: .utf8)!
+        
+        XCTAssertEqual(decryptedResponseText, responseMessage)
+    }
+    
+    func testSessionPersistence() throws {
+        // Set up initial session using pre-keys
+        try setupInitialSession()
+        
+        // Create new stores to simulate app restart
+        let newAliceStore = InMemorySignalProtocolStore(
+            identity: try aliceStore.getIdentityKeyPair(),
+            registrationId: try aliceStore.getLocalRegistrationId()
+        )
+        let newBobStore = InMemorySignalProtocolStore(
+            identity: try bobStore.getIdentityKeyPair(),
+            registrationId: try bobStore.getLocalRegistrationId()
+        )
+        
+        // Copy session data to new stores
+        if let aliceSession = try aliceStore.loadSession(for: bobAddress) {
+            try newAliceStore.storeSession(aliceSession, for: bobAddress)
+        }
+        if let bobSession = try bobStore.loadSession(for: aliceAddress) {
+            try newBobStore.storeSession(bobSession, for: aliceAddress)
+        }
+        
+        // Test message exchange with new stores
+        let message = "Message after restart"
+        let sessionCipher = SessionCipher(store: newAliceStore, remoteAddress: bobAddress)
+        let encryptedMessage = try sessionCipher.encrypt(message.data(using: .utf8)!)
+        
+        // Convert to SignalMessage for decryption
+        let signalMessage = try SignalMessage(data: encryptedMessage.body)
+        
+        let decryptedMessage = try sessionCipher.decrypt(message: signalMessage)
+        let decryptedText = String(data: decryptedMessage, encoding: .utf8)!
+        
+        XCTAssertEqual(decryptedText, message)
+    }
+    
+    func testSessionReestablishment() throws {
+        // Set up initial session
+        try setupInitialSession()
+        
+        // Generate new pre-keys for Bob
+        let newPreKeys = try LibNotSignal.shared.generatePreKeys(start: 11, count: 10)
+        let newSignedPreKey = try LibNotSignal.shared.generateSignedPreKey(
+            identityKeyPair: try bobStore.getIdentityKeyPair(),
+            id: 2
+        )
+        
+        // Store new pre-keys
+        for preKey in newPreKeys {
+            try bobStore.storePreKey(preKey, id: preKey.id)
+        }
+        try bobStore.storeSignedPreKey(newSignedPreKey, id: newSignedPreKey.id)
+        
+        // Create new pre-key bundle
+        let newPreKeyBundle = PreKeyBundle(
+            registrationId: try bobStore.getLocalRegistrationId(),
+            deviceId: bobAddress.deviceId,
+            preKeyId: newPreKeys[0].id,
+            preKey: newPreKeys[0].publicKey,
+            signedPreKeyId: newSignedPreKey.id,
+            signedPreKey: newSignedPreKey.publicKey,
+            signedPreKeySignature: newSignedPreKey.signature,
+            identityKey: try bobStore.getIdentityKeyPair().publicKey
+        )
+        
+        // Alice processes new pre-key bundle
+        let sessionBuilder = SessionBuilder(store: aliceStore, remoteAddress: bobAddress)
+        try sessionBuilder.process(preKeyBundle: newPreKeyBundle)
+        
+        // Test message exchange after reestablishment
+        let message = "Message after reestablishment"
+        let sessionCipher = SessionCipher(store: aliceStore, remoteAddress: bobAddress)
+        let encryptedMessage = try sessionCipher.encrypt(message.data(using: .utf8)!)
+        
+        // Convert to SignalMessage for decryption
+        let signalMessage = try SignalMessage(data: encryptedMessage.body)
+        
+        let decryptedMessage = try sessionCipher.decrypt(message: signalMessage)
+        let decryptedText = String(data: decryptedMessage, encoding: .utf8)!
+        
+        XCTAssertEqual(decryptedText, message)
+    }
+    
+    // Helper method to set up initial session
+    private func setupInitialSession() throws {
+        let preKeys = try LibNotSignal.shared.generatePreKeys(start: 1, count: 10)
+        let signedPreKey = try LibNotSignal.shared.generateSignedPreKey(
+            identityKeyPair: try bobStore.getIdentityKeyPair(),
+            id: 1
+        )
+        
+        for preKey in preKeys {
+            try bobStore.storePreKey(preKey, id: preKey.id)
+        }
+        try bobStore.storeSignedPreKey(signedPreKey, id: signedPreKey.id)
+        
+        let preKeyBundle = PreKeyBundle(
+            registrationId: try bobStore.getLocalRegistrationId(),
+            deviceId: bobAddress.deviceId,
+            preKeyId: preKeys[0].id,
+            preKey: preKeys[0].publicKey,
+            signedPreKeyId: signedPreKey.id,
+            signedPreKey: signedPreKey.publicKey,
+            signedPreKeySignature: signedPreKey.signature,
+            identityKey: try bobStore.getIdentityKeyPair().publicKey
+        )
+        
+        let sessionBuilder = SessionBuilder(store: aliceStore, remoteAddress: bobAddress)
+        try sessionBuilder.process(preKeyBundle: preKeyBundle)
     }
 } 

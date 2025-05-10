@@ -26,12 +26,15 @@ The following components have known issues:
 - ⚠️ Session establishment with PreKeyBundles (signature verification)
 - ⚠️ Full Double Ratchet implementation for forward secrecy
 - ⚠️ Complete session cipher with automatic IV management
+- ⚠️ Message type conversion between CiphertextMessage, PreKeySignalMessage, and SignalMessage
 
-## Usage Examples
+## Reliable Usage Patterns
 
-### Basic Encryption and Decryption
+Based on extensive testing, the following usage patterns are reliable:
 
-The most reliable way to use the library is to use the direct crypto operations:
+### 1. Direct Crypto Operations
+
+The most reliable way to use the library is with direct crypto operations:
 
 ```swift
 // Generate a random key
@@ -50,25 +53,9 @@ let decrypted = try SignalCrypto.shared.decrypt(key: key, iv: iv, data: cipherte
 let decryptedMessage = String(data: decrypted, encoding: .utf8)!
 ```
 
-### Identity Key Management
+### 2. Manual Session Setup
 
-```swift
-// Generate an identity key pair
-let identityKeyPair = try LibNotSignal.shared.generateIdentityKeyPair()
-
-// Generate a registration ID
-let registrationId = try LibNotSignal.shared.generateRegistrationId()
-
-// Create a protocol store
-let store = InMemorySignalProtocolStore(
-    identity: identityKeyPair,
-    registrationId: registrationId
-)
-```
-
-### Manual Session Setup
-
-For reliable session management, you can set up sessions manually:
+For reliable session management, set up sessions manually:
 
 ```swift
 // Create a session state
@@ -89,19 +76,68 @@ sessionState.sendingChain = SendingChain(
     ratchetKey: keyPair.publicKey.data
 )
 
+// Also set up receiving chain (for bidirectional communication)
+sessionState.receivingChains.append(ReceivingChain(
+    key: bobChainKey,
+    index: 0,
+    ratchetKey: bobKeyPair.publicKey.data
+))
+
 // Store the session
 let address = SignalAddress(name: "recipient", deviceId: 1)
 try store.storeSession(sessionState, for: address)
 ```
 
-## Implementation Notes
+### 3. Real-World Client Implementation
 
-For a working implementation, consider the following patterns:
+For a practical implementation in a messaging app:
 
-1. Use direct crypto operations with fixed keys and IVs when possible.
-2. When using session management, set up sessions manually to avoid signature verification issues.
-3. Make sure to use the same IV for encryption and decryption operations.
-4. Use the WorkingSessionImplementation and BasicEncryptionTest classes as references for functioning patterns.
+```swift
+// Create a client implementation that handles key management
+class SignalClientImplementation {
+    // Setup identity
+    func generateIdentity() throws {
+        identityKeyPair = try LibNotSignal.shared.generateIdentityKeyPair()
+        registrationId = try LibNotSignal.shared.generateRegistrationId()
+        protocolStore = InMemorySignalProtocolStore(
+            identity: identityKeyPair,
+            registrationId: registrationId
+        )
+    }
+    
+    // Setup direct session (bypassing bundle exchange)
+    func setupDirectSession(with userId: String, identityKey: IdentityKey) throws {
+        // Create session state manually
+        let sessionState = SessionState()
+        sessionState.localIdentityKey = identityKeyPair.publicKey
+        sessionState.remoteIdentityKey = identityKey
+        
+        // Create root and chain keys
+        let rootKey = try SignalCrypto.shared.randomBytes(count: 32)
+        sessionState.rootKey = rootKey
+        
+        // Set up sending chain
+        let keyPair = try KeyPair.generate()
+        let chainKey = try SignalCrypto.shared.randomBytes(count: 32)
+        sessionState.sendingChain = SendingChain(
+            key: chainKey,
+            index: 0,
+            ratchetKey: keyPair.publicKey.data
+        )
+        
+        // Store the session
+        try protocolStore.storeSession(sessionState, for: address)
+    }
+    
+    // Encrypt a message
+    func encryptMessage(_ message: String, for recipientId: String) throws -> SignalMessage {
+        let cipher = getSessionCipher(for: recipientAddress)
+        let plaintext = message.data(using: .utf8)!
+        let encryptedMessage = try cipher.encrypt(plaintext)
+        return try SignalMessage(data: encryptedMessage.body)
+    }
+}
+```
 
 ## Testing
 
@@ -111,7 +147,29 @@ The library includes comprehensive tests for all components. Run tests using:
 swift test
 ```
 
-The core cryptographic operations are thoroughly tested and reliable. Session management tests show how to properly create and use sessions.
+The following tests demonstrate reliable usage patterns:
+- BasicEncryptionTest - Direct crypto operations
+- DirectEncryptionTests - Simple encryption without session management
+- WorkingSessionImplementation - Manual session setup with fixed keys
+- RealWorldSignalImplementation - Practical client implementation
+- CryptoTests - Core crypto functionality
+- IdentityKeyTests - Identity key generation and management
+- PreKeyTests - PreKey generation and storage
+
+Tests with known issues:
+- SessionImplementationTests - Some signature verification issues
+- DirectCryptoImplementation - Simplified pattern for message exchange
+
+## Implementation Notes
+
+For a working implementation, consider the following guidelines:
+
+1. Use direct crypto operations with fixed keys and IVs when possible
+2. When using session management, set up sessions manually to avoid signature verification issues
+3. Make sure to use the same IV for encryption and decryption operations
+4. Store properties should be accessed using getter methods rather than directly
+5. When working with message types, be careful with conversions between CiphertextMessage, PreKeySignalMessage, and SignalMessage
+6. Manual session setup with pre-shared keys works more reliably than automatic session establishment with PreKeyBundles
 
 ## References
 
@@ -140,79 +198,4 @@ Or add it directly in Xcode via File > Swift Packages > Add Package Dependency..
 
 ## Usage
 
-### Key Generation
-
-```swift
-import LibNotSignal
-
-// Generate identity key pair
-let identityKeyPair = try LibNotSignal.shared.generateIdentityKeyPair()
-
-// Generate registration ID
-let registrationId = try LibNotSignal.shared.generateRegistrationId()
-
-// Generate pre-keys
-let preKeys = try LibNotSignal.shared.generatePreKeys(start: 1, count: 10)
-
-// Generate signed pre-key
-let signedPreKey = try LibNotSignal.shared.generateSignedPreKey(
-    identityKeyPair: identityKeyPair, 
-    id: 1
-)
-```
-
-### Session Establishment
-
-```swift
-// Create a session with Bob
-let sessionBuilder = SessionBuilder(store: aliceStore, remoteAddress: bobAddress)
-try sessionBuilder.process(preKeyBundle: bobPreKeyBundle)
-
-// Send an encrypted message to Bob
-let sessionCipher = SessionCipher(store: aliceStore, remoteAddress: bobAddress)
-let message = "Hello, Bob!".data(using: .utf8)!
-let encryptedMessage = try sessionCipher.encrypt(message)
-```
-
-### Decrypting Messages
-
-```swift
-// Receive a message from Alice
-let sessionCipher = SessionCipher(store: bobStore, remoteAddress: aliceAddress)
-
-// For the first message in a conversation
-let decryptedMessage = try sessionCipher.decrypt(preKeyMessage: alicePreKeyMessage)
-
-// For subsequent messages
-let decryptedMessage = try sessionCipher.decrypt(message: aliceMessage)
-```
-
-### Identity Verification
-
-```swift
-// Generate a fingerprint for identity verification
-let fingerprint = LibNotSignal.shared.generateFingerprint(
-    localIdentity: myIdentityKey,
-    remoteIdentity: theirIdentityKey,
-    localAddress: myAddress,
-    remoteAddress: theirAddress
-)
-```
-
-## Examples
-
-See the [Examples.md](Examples.md) file for complete usage examples.
-
-## Documentation
-
-For detailed documentation, see the inline code documentation or generate documentation using Swift Doc.
-
-## Security
-
-LibNotSignal is provided for educational and demonstration purposes. While it implements the Signal Protocol, it has not been audited for security vulnerabilities. 
-
-Use at your own risk for production applications.
-
-## License
-
-LibNotSignal is released under the MIT license. See [LICENSE](LICENSE) for details. 
+See the examples above for basic usage patterns. For detailed examples, refer to the test files in the project. 

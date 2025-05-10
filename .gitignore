@@ -86,3 +86,4 @@ iOSInjectionProject/
 
 # macOS
 .DS_Store 
+session-test-from-official-libsignal-only-for-example.rs
