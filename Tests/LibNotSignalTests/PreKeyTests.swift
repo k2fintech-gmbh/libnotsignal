@@ -71,4 +71,43 @@ final class PreKeyTests: XCTestCase {
     // Note: Signed prekey and prekey bundle functionality tests
     // are skipped because the current implementation does not
     // fully support signature operations.
+    
+    func testSignedPreKeyRecordBase64Serialization() throws {
+        // Generate an identity key pair for signing
+        let identityKeyPair = try LibNotSignal.shared.generateIdentityKeyPair()
+        
+        // Generate a signed pre key
+        let signedPreKey = try SignedPreKeyRecord.generate(
+            id: 1,
+            identityKeyPair: identityKeyPair,
+            timestamp: UInt64(Date().timeIntervalSince1970)
+        )
+        
+        // Serialize to bytes
+        let serializedBytes = signedPreKey.serialize()
+        
+        // Convert to base64
+        let base64String = Data(serializedBytes).base64EncodedString()
+        
+        // Convert back from base64 to bytes
+        guard let decodedData = Data(base64Encoded: base64String),
+              let decodedBytes = try? [UInt8](decodedData) else {
+            XCTFail("Failed to decode base64 string")
+            return
+        }
+        
+        // Deserialize back to SignedPreKeyRecord
+        let deserializedRecord = try SignedPreKeyRecord(bytes: decodedBytes)
+        
+        // Verify all properties match
+        XCTAssertEqual(deserializedRecord.id, signedPreKey.id)
+        XCTAssertEqual(deserializedRecord.timestamp, signedPreKey.timestamp)
+        XCTAssertEqual(deserializedRecord.publicKey, signedPreKey.publicKey)
+        XCTAssertEqual(deserializedRecord.privateKey, signedPreKey.privateKey)
+        XCTAssertEqual(deserializedRecord.signature, signedPreKey.signature)
+        
+        // Verify the serialized bytes match
+        let reserializedBytes = deserializedRecord.serialize()
+        XCTAssertEqual(reserializedBytes, serializedBytes)
+    }
 } 

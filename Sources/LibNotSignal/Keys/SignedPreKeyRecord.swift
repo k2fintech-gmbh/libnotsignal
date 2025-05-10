@@ -103,26 +103,26 @@ public struct SignedPreKeyRecord: Codable, Equatable {
     public func serialize() -> [UInt8] {
         var result = [UInt8]()
         
-        // Add ID (4 bytes)
-        var idValue = id
+        // Add ID (4 bytes, big-endian)
+        var idValue = id.bigEndian
         result.append(contentsOf: withUnsafeBytes(of: &idValue) { Array($0) })
         
-        // Add timestamp (8 bytes)
-        var timestampValue = timestamp
+        // Add timestamp (8 bytes, big-endian)
+        var timestampValue = timestamp.bigEndian
         result.append(contentsOf: withUnsafeBytes(of: &timestampValue) { Array($0) })
         
-        // Add public key length and data
-        var publicKeyLength = UInt16(publicKey.count)
+        // Add public key length and data (big-endian)
+        var publicKeyLength = UInt16(publicKey.count).bigEndian
         result.append(contentsOf: withUnsafeBytes(of: &publicKeyLength) { Array($0) })
         result.append(contentsOf: publicKey)
         
-        // Add private key length and data
-        var privateKeyLength = UInt16(privateKey.count)
+        // Add private key length and data (big-endian)
+        var privateKeyLength = UInt16(privateKey.count).bigEndian
         result.append(contentsOf: withUnsafeBytes(of: &privateKeyLength) { Array($0) })
         result.append(contentsOf: privateKey)
         
-        // Add signature length and data
-        var signatureLength = UInt16(signature.count)
+        // Add signature length and data (big-endian)
+        var signatureLength = UInt16(signature.count).bigEndian
         result.append(contentsOf: withUnsafeBytes(of: &signatureLength) { Array($0) })
         result.append(contentsOf: signature)
         
@@ -133,25 +133,24 @@ public struct SignedPreKeyRecord: Codable, Equatable {
     public static func deserialize(from bytes: [UInt8]) throws -> SignedPreKeyRecord {
         var offset = 0
         
-        // Read ID
+        // Read ID (4 bytes, big-endian)
         guard bytes.count >= offset + 4 else {
             throw LibNotSignalError.invalidSerializedData
         }
         let id = UInt32(bytes[offset]) << 24 | UInt32(bytes[offset + 1]) << 16 | UInt32(bytes[offset + 2]) << 8 | UInt32(bytes[offset + 3])
         offset += 4
         
-        // Read timestamp
+        // Read timestamp (8 bytes, big-endian)
         guard bytes.count >= offset + 8 else {
             throw LibNotSignalError.invalidSerializedData
         }
-        
         var timestamp: UInt64 = 0
         for i in 0..<8 {
             timestamp |= UInt64(bytes[offset + i]) << (8 * (7 - i))
         }
         offset += 8
         
-        // Read public key length
+        // Read public key length (2 bytes, big-endian)
         guard bytes.count >= offset + 2 else {
             throw LibNotSignalError.invalidSerializedData
         }
@@ -165,7 +164,7 @@ public struct SignedPreKeyRecord: Codable, Equatable {
         let publicKey = Data(bytes[offset..<offset + Int(publicKeyLength)])
         offset += Int(publicKeyLength)
         
-        // Read private key length
+        // Read private key length (2 bytes, big-endian)
         guard bytes.count >= offset + 2 else {
             throw LibNotSignalError.invalidSerializedData
         }
@@ -179,7 +178,7 @@ public struct SignedPreKeyRecord: Codable, Equatable {
         let privateKey = Data(bytes[offset..<offset + Int(privateKeyLength)])
         offset += Int(privateKeyLength)
         
-        // Read signature length
+        // Read signature length (2 bytes, big-endian)
         guard bytes.count >= offset + 2 else {
             throw LibNotSignalError.invalidSerializedData
         }
